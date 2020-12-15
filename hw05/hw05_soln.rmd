@@ -1,0 +1,462 @@
+---
+title: 'STAT 420: Homework 05'
+author: "Fall 2020, D. Unger"
+date: 'Due: Tuesday, October 13 by 11:30 PM CT'
+output:
+   html_document:
+    theme: readable
+    toc: yes
+---
+
+# Solution
+
+## Exercise 1 (Using `lm`)
+
+For this exercise we will use the data stored in [`nutrition.csv`](nutrition.csv). It contains the nutritional values per serving size for a large variety of foods as calculated by the USDA. It is a cleaned version totaling 5,138 observations and is current as of September 2015.
+
+The variables in the dataset are:
+
+- `ID` 
+- `Desc` - Short description of food
+- `Water` - in grams
+- `Calories` 
+- `Protein` - in grams
+- `Fat` - in grams
+- `Carbs` - Carbohydrates, in grams
+- `Fiber` - in grams
+- `Sugar` - in grams
+- `Calcium` - in milligrams
+- `Potassium` - in milligrams
+- `Sodium` - in milligrams
+- `VitaminC` - Vitamin C, in milligrams
+- `Chol` - Cholesterol, in milligrams
+- `Portion` - Description of standard serving size used in analysis
+
+**(a)** Fit the following multiple linear regression model in `R`. Use `Calories` as the response and `Carbs`, `Fat`, and `Protein` as predictors.
+
+\[
+Y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \epsilon_i.
+\]
+
+Here,
+
+- $Y_i$ is `Calories`.
+- $x_{i1}$ is `Carbs`.
+- $x_{i2}$ is `Fat`.
+- $x_{i3}$ is `Protein`.
+
+Use an $F$-test to test the significance of the regression. Report the following:
+ 
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.01$
+- A conclusion in the context of the problem
+
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+**Solution:**
+
+```{r, solution = TRUE}
+nutrition = read.csv("nutrition.csv")
+library(broom)
+nut_cfp = lm(Calories ~ Carbs + Fat + Protein, data = nutrition)
+summary(nut_cfp)
+```
+
+
+- $H_0: \beta_1 = \beta_2 = \beta_{3} = 0.$
+- $H_1: \text{At least one of } \beta_j \neq 0, j = 1, 2, 3.$
+
+- Test statistic: $F = `r glance(nut_cfp)$statistic`$
+- P-value: $`r glance(nut_cfp)$p.value`$. Although, not actually $0$, but very small.
+- Decision: **Reject** $H_0$ at $\alpha = 0.01$.
+- Conclusion: There is a linear relationship between Calories and at least some of carbs, fat and protein.
+
+Note that we used the [`broom` package](https://cran.r-project.org/web/packages/broom/vignettes/broom.html) to obtain some results directly. This is a useful package for "cleaning" some of the default `R` output.
+
+**(b)** Output only the estimated regression coefficients. Interpret all $\hat{\beta}_j$ coefficients in the context of the problem.
+
+**Solution:**
+
+```{r, solution = TRUE}
+coef(nut_cfp)
+```
+
+- $\hat{\beta_0} = `r coef(nut_cfp)[1]`$ is the estimated Calories of a food with 0g carbs, 0g fat, and 0g protein.
+- $\hat{\beta_1} = `r coef(nut_cfp)[2]`$ is the estimated change in mean Calories for an increase of 1g carbs for a food with a certain fat and protein content.
+- $\hat{\beta_2} = `r coef(nut_cfp)[3]`$ is the estimated change in mean Calories for an increase of 1g fat for a food with a certain carb and protein content.
+- $\hat{\beta_3} = `r coef(nut_cfp)[4]`$ is the estimated change in mean Calories for an increase of 1g protein for a food with a certain carb and fat content.
+
+**(c)** Use your model to predict the amount of `Calories` in a Big Mac. According to [McDonald's publicized nutrition facts](http://nutrition.mcdonalds.com/getnutrition/nutritionfacts.pdf), the Big Mac contains 47g of carbohydrates, 28g of fat, and 25g of protein.
+
+**Solution:**
+
+```{r, solution = TRUE}
+big_mac = data.frame(Carbs = 47, Fat = 28, Protein = 25)
+predict(nut_cfp, newdata = big_mac)
+```
+
+**(d)** Calculate the standard deviation, $s_y$, for the observed values in the Calories variable. Report the value of $s_e$ from your multiple regression model. Interpret both estimates in the context of this problem.
+
+**Solution:**
+
+```{r, solution = TRUE}
+(s_y = sd(nutrition$Calories))
+(s_e = glance(nut_cfp)$sigma)
+```
+
+- $s_y = `r s_y`$ gives us an estimate of the variability of Calories. Specifically how the observed calorie data varies about its mean. (We could think of this as an estimate for how the observations vary in the model $Y_i = \beta_0 +\epsilon_i$.) This estimate does not use the predictors in any way.
+- $s_e = `r s_e`$ gives us an estimate of the variability of the residuals of the model, specifically how the observed calorie data varies about the fitted regression. This estimate does take into account the predictors.
+
+**(e)** Report the value of $R^2$ for the model. Interpret its meaning in the context of the problem.
+
+**Solution:**
+
+```{r, solution = TRUE}
+glance(nut_cfp)$r.squared
+```
+
+$R^2 = `r round(glance(nut_cfp)$r.squared,4)`$ tells us that $`r round(glance(nut_cfp)$r.squared*100,2)`\%$ of the observed variation in Calories is explained by a linear relationship with carbs, fat and protein.
+ 
+**(f)** Calculate a 90% confidence interval for $\beta_2$. Give an interpretation of the interval in the context of the problem.
+
+**Solution:**
+
+```{r, solution = TRUE}
+confint(nut_cfp, level = 0.90)
+confint(nut_cfp, level = 0.90)[3,]
+```
+
+We are 90% confident that the true change in mean Calories for an increase of 1g fat is in this interval.
+ 
+**(g)** Calculate a 95% confidence interval for $\beta_0$. Give an interpretation of the interval in the context of the problem.
+
+**Solution:**
+
+```{r, solution = TRUE}
+confint(nut_cfp, level = 0.95)[1,]
+```
+
+We are 95% confident that the true mean Calories for a food with 0g of carbs, fat, and protein is in this interval. (This **is** possible. We are, for example, not measuring alcohol content, which does provide Calories.)
+ 
+**(h)** Use a 99% confidence interval to estimate the mean Calorie content of a small order of McDonald's french fries that has 30g of carbohydrates, 11g of fat, and 2g of protein. Interpret the interval in context.
+ 
+**Solution:**
+
+```{r, solution = TRUE}
+small_fries = data.frame(Carbs = 30, Fat = 11, Protein = 2)
+predict(nut_cfp, newdata = small_fries, interval = "confidence", level = 0.99)
+```
+
+We are 99% confident that the true mean Calories for foods with 30g of carbohydrates, 11g of fat, and 2g of protein is in this interval.
+ 
+**(i)** Use a 90% prediction interval to predict the Calorie content of new healthy menu item that has 11g of carbohydrates, 1.5g of fat, and 1g of protein. Interpret the interval in context.
+
+**Solution:**
+
+```{r, solution = TRUE}
+healthy_item = data.frame(Carbs = 11, Fat = 1.5, Protein = 1)
+predict(nut_cfp, newdata = healthy_item, interval = "prediction", level = 0.90)
+```
+
+We are 90% confident that the Calories for a food item with 11g of carbohydrates, 1.5g of fat, and 1g of protein is in this interval.
+
+## Exercise 2 (More `lm`)
+
+For this exercise we will again use the nutrition data. 
+
+**(a)** Fit a model with Calories as the response and `Carbs`, `Sodium`, `Fat`, and `Protein` as predictors. Use an $F$-test to test the significance of the regression. Report the following:
+ 
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.01$
+- A conclusion in the context of the problem
+
+**Solution:**
+
+```{r, solution = TRUE}
+nut_csfp  = lm(Calories ~ Carbs + Sodium + Fat + Protein, data = nutrition)
+summary(nut_csfp)
+```
+
+
+In this model, there are $4$ predictors.
+
+- $H_0: \beta_C = \beta_S = \beta_F = \beta_P = 0.$
+- $H_1: \text{At least one of } \beta_C, \beta_S, \beta_F, \beta_P \neq 0$
+
+- Test statistic: $F = `r glance(nut_csfp)$statistic`$
+- P-value: $`r glance(nut_csfp)$p.value`$. Although, not actually $0$, but very small.
+- Decision: **Reject** $H_0$ at $\alpha = 0.01$.
+- Conclusion: There is a linear relationship between Calories and at least some of carbs, sodium, fat and protein.
+
+**(b)** For each of the predictors in part **(a)**, perform a $t$-test for the significance of its regression coefficient. Report the following for each:
+ 
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.01$
+
+**Solution:**
+
+```{r, solution = TRUE}
+tidy(nut_csfp)
+```
+
+**Carbs**
+
+- $H_0: \beta_C = 0$
+- $H_1: \beta_C \neq 0$
+
+- Test statistic: $t = `r tidy(nut_csfp)[2,]$statistic`$
+- P-value: $`r tidy(nut_csfp)[2,]$p.value`$.
+- Decision: **Reject** $H_0$ at $\alpha = 0.01$.
+
+**Sodium**
+
+- $H_0: \beta_S = 0$
+- $H_1: \beta_S \neq 0$
+
+- Test statistic: $t = `r tidy(nut_csfp)[3,]$statistic`$
+- P-value: $`r tidy(nut_csfp)[3,]$p.value`$.
+- Decision: **Fail to Reject** $H_0$ at $\alpha = 0.01$.
+
+**Fat**
+
+- $H_0: \beta_F = 0$
+- $H_1: \beta_F \neq 0$
+
+- Test statistic: $t = `r tidy(nut_csfp)[4,]$statistic`$
+- P-value: $`r tidy(nut_csfp)[4,]$p.value`$.
+- Decision: **Reject** $H_0$ at $\alpha = 0.01$.
+
+**Protein**
+
+- $H_0: \beta_P = 0$
+- $H_1: \beta_P \neq 0$
+
+- Test statistic: $t = `r tidy(nut_csfp)[5,]$statistic`$
+- P-value: $`r tidy(nut_csfp)[5,]$p.value`$.
+- Decision: **Reject** $H_0$ at $\alpha = 0.01$.
+
+**(c)** Based on your results in part **(b)**, do you still prefer the model in part **(a)**, or is there instead a model with three predictors that you prefer? Briefly explain.
+
+**Solution:**
+
+Based on the above, it is perhaps best to use a model without sodium, since it is not significant with the other terms in the model, that is, a model with only protein, fat and carbs. This should match out intuition about [food energy](https://en.wikipedia.org/wiki/Food_energy).
+
+## Exercise 3 (Comparing Models)
+
+For this exercise we will use the data stored in [`goalies_cleaned.csv`](goalies_cleaned.csv). It contains career data for 462 players in the National Hockey League who played goaltender at some point up to and including the 2014 - 2015 season. The variables in the dataset are:
+ 
+- `W` - Wins
+- `GA` - Goals Against
+- `SA` - Shots Against
+- `SV` - Saves
+- `SV_PCT` - Save Percentage
+- `GAA` - Goals Against Average
+- `SO` - Shutouts
+- `MIN` - Minutes
+- `PIM` - Penalties in Minutes
+ 
+**(a)** Fit a multiple linear regression model with Wins as the response and all other variables as the predictors.
+ 
+Use an $F$-test to test the significance of the regression. Report the following:
+ 
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.10$
+- A conclusion in the context of the problem
+ 
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+**Solution:**
+
+```{r, , solution = TRUE}
+goalies_cleaned = read.csv("goalies_cleaned.csv")
+goalies_full  = lm(W ~ ., data = goalies_cleaned)
+glance(goalies_full)
+```
+
+
+In this model, there are $8$ predictors.
+
+- $H_0: \beta_1 = \beta_2 = \cdots = \beta_{8} = 0$.
+- $H_1: \text{At least one of } \beta_j \neq 0, j = 1, 2, \cdots, 8$.
+
+- Test statistic: $F = `r glance(goalies_full)$statistic`$
+- P-value: $`r glance(goalies_full)$p.value`$. Although, not actually $0$, but very small.
+- Decision: **Reject** $H_0$ at $\alpha = 0.10$.
+- Conclusion: There is a linear relationship between Wins and at least some of the predictor variables.
+ 
+**(b)** Calculate the RMSE of this full model. Report the residual standard error of this full model. What is the relationship of these two values?
+
+Recall, we have defined RMSE as,
+
+\[
+RMSE = \sqrt{\frac{1}{n} \sum_{i = 1}^{n}(y_i - \hat{y}_i)^2}.
+\]
+
+**Solution:**
+
+```{r, , solution = TRUE}
+(rmse = sqrt(mean(resid(goalies_full) ^ 2)))
+(rse  = glance(goalies_full)$sigma)
+```
+
+RMSE and RSE both estimate $\sigma$, however RMSE is biased, while RSE is not. This is a result of the difference in their denominators. Both estimates use the sum of the residuals squared.
+ 
+**(c)** Fit a model with Wins as the response and with Goals Against, Goals Against Average, Saves, and Save Percentage as the predictors. Calculate the RMSE of this model.
+
+**Solution:**
+
+```{r, , solution = TRUE}
+goalies_mod1  = lm(W ~ GA + GAA + SV + SV_PCT, data = goalies_cleaned)
+sqrt(mean(resid(goalies_mod1) ^ 2))
+```
+ 
+**(d)** Fit a model with Wins as the response and with Goals Against Average and Save Percentage as the predictors. Calculate the RMSE of this model.
+
+**Solution:**
+
+```{r, , solution = TRUE}
+goalies_mod2  = lm(W ~ GAA + SV_PCT, data = goalies_cleaned)
+sqrt(mean(resid(goalies_mod2) ^ 2))
+```
+ 
+**(e)** Based on the previous three models, which model is most helpful for predicting wins? Briefly explain.
+
+**Solution:**
+
+Based on their RMSEs, the full model with all of the predictors has the lowest, so it is making the best predictions.
+ 
+**(f)** Conduct an ANOVA $F$-test comparing the models in parts **(c)** and **(d)**. Report the following:
+ 
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.10$
+- A conclusion in the context of the problem
+ 
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+**Solution:**
+
+```{r, , solution = TRUE}
+anova(goalies_mod2, goalies_mod1)
+```
+
+
+Between these two model, there is a difference of $2$ predictors.
+
+- $H_0: \beta_{GA} = \beta_{SV} = 0$.
+- $H_1: \text{At least one of } \beta_{GA}, \beta_{SV} \neq 0$.
+
+- Test statistic: $F = `r tidy(anova(goalies_mod2, goalies_mod1))[2,]$statistic`$
+- P-value: $`r tidy(anova(goalies_mod2, goalies_mod1))[2,]$p.value`$.
+- Decision: **Reject** $H_0$ at $\alpha = 0.10$.
+- Conclusion: The linear relationship between Wins and the predictors is better explained with `GA` and `SV` in the model. While these are very related to `GAA` and `SV_PCT`, we are predicting career wins, so total `GA` and `SV` instead of their rates are indeed useful.
+
+## Exercise 4 (Regression without `lm`)
+
+For this exercise use the `prostate` dataset from the `faraway` package. Use `?prosate` to learn about the dataset. The goal of this exercise is to fit a model with `lpsa` as the response and the remaining variables as predictors.
+
+**(a)** Obtain the estimated regression coefficients **without** the use of `lm()` or any other built-in functions for regression. That is, you should use only matrix operations. Store the results in a vector `beta_hat_no_lm`. To ensure this is a vector, you may need to use `as.vector()`. Return this vector as well as the results of `sum(beta_hat_no_lm)`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+# load needed package
+library(faraway)
+
+# setup response vector and design matrix
+y = prostate$lpsa
+n = length(y)
+X = cbind(rep(1, n), as.matrix(within(prostate, rm("lpsa"))))
+
+# solve for estimated coefficients
+beta_hat_no_lm = solve(crossprod(X, X)) %*% t(X) %*% y
+
+# coerce results to vector
+beta_hat_no_lm = as.vector(beta_hat_no_lm)
+
+# return requested results
+beta_hat_no_lm
+sum(beta_hat_no_lm)
+```
+
+
+
+**(b)** Obtain the estimated regression coefficients **with** the use of `lm()`. Store the results in a vector `beta_hat_lm`. To ensure this is a vector, you may need to use `as.vector()`. Return this vector as well as the results of `sum(beta_hat_lm)`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+# fit model with lm() and extract coefficients
+fit = lm(lpsa ~ ., data = prostate)
+beta_hat_lm = as.vector(coef(fit))
+
+# return requested results
+beta_hat_lm
+sum(beta_hat_lm)
+```
+
+Notice the sum is the same, but we will complete one more step to verify equality.
+
+**(c)** Use the `all.equal()` function to verify that the results are the same. You may need to remove the names of one of the vectors. The `as.vector()` function will do this as a side effect, or you can directly use `unname()`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+all.equal(beta_hat_no_lm, beta_hat_lm)
+```
+
+Note that `all.equal()` allows for some minor differences. It only looks for "near equality." If we investigate further, we'd notice that in reality none of the estimates are the same.
+
+```{r, solution = TRUE}
+beta_hat_no_lm == beta_hat_lm
+```
+
+But why is this? While we do know the analytic solution
+
+\[
+\hat{\beta} = \left(  X^\top X  \right)^{-1}X^\top y,
+\]
+
+it is not what `R` is using when calculating the regression coefficients using `lm()`. In reality, `R` is using a [QR decomposition](https://en.wikipedia.org/wiki/QR_decomposition) for speed and stability of the needed matrix operations. This creates very small numerical differences in the results.
+
+**(d)** Calculate $s_e$ without the use of `lm()`. That is, continue with your results from **(a)** and perform additional matrix operations to obtain the result. Output this result. Also, verify that this result is the same as the result obtained from `lm()`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+# obtain the fitted values
+y_hat = crossprod(t(X), beta_hat_no_lm)
+
+# calculate s_e
+s_e = sqrt(crossprod(y - y_hat, y - y_hat) / (length(y) - length(beta_hat_no_lm)))
+s_e
+
+# check that result matches lm()
+all.equal(as.vector(s_e), summary(fit)$sigma)
+```
+
+**(e)** Calculate $R^2$ without the use of `lm()`. That is, continue with your results from **(a)** and **(d)** and perform additional operations to obtain the result. Output this result. Also, verify that this result is the same as the result obtained from `lm()`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+# some intermediate calculations
+sse = sum(crossprod(y - y_hat, y - y_hat))
+sst = sum(crossprod(y - mean(y), y - mean(y)))
+
+# calculate r2
+r2 = 1 - sse / sst
+r2
+
+# check that result matches lm()
+all.equal(as.vector(r2), summary(fit)$r.squared)
+```

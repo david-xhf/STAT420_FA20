@@ -1,0 +1,491 @@
+---
+title: 'STAT 420: Homework 01'
+author: "Fall 2020, D. Unger"
+date: 'Due: Tuesday, September 15 by 11:30 PM CT'
+output:
+  html_document:
+    theme: readable
+    toc: yes
+---
+
+# Solution
+
+## Exercise 1 (Working with Vectors)
+
+Recall the definitions of sample mean and sample standard deviation for data $x_1, x_2, \ldots, x_n$.
+
+\[
+\bar{x} = \displaystyle\frac{1}{n}\sum_{i=1}^{n}x_{i}
+\]
+
+\[
+s = \sqrt{\frac{1}{n - 1}\sum_{i=1}^{n}(x - \bar{x})^2}
+\]
+
+Consider the following vector of data.
+
+```{r}
+x = c(1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144)
+```
+
+**(a)** Calculate the sample mean of `x` *without* the use of `mean()`, `sd()`, `sum()`, or `+`. Hint: Recall that vectors in `R` are column vectors. (Although when you display them, they often *look* like row vectors.) You may need to create a second vector, which is allowed, and should also look into the function `crossprod()`. Essentially, you need to use matrix algebra to recreate the formulas above. You may use `mean()` to check your answer.
+
+**Solution:**
+
+```{r, solution = TRUE}
+n = length(x)
+all_1 = rep(1, times = n)
+(x_bar = crossprod(all_1, x) / n)
+mean(x) # checking work
+```
+
+The command `crossprod(all_1, x)` is performing the operation
+
+\[
+\boldsymbol{1}^\top \boldsymbol{x}
+\]
+
+where $\boldsymbol{x}$ is the column vector stored in `x` and $\boldsymbol{1}$ is a vector of length `n = 12` where each element stores the value `1`. That is 
+
+\[
+\boldsymbol{x} = \begin{bmatrix} x_1 \\ x_2 \\ \vdots\\ x_n \end{bmatrix}
+\]
+
+and
+
+\[
+\boldsymbol{1} = \begin{bmatrix} 1 \\ 1 \\ \vdots\\ 1 \end{bmatrix}
+\]
+
+So,
+
+
+\[
+\boldsymbol{1}^\top \boldsymbol{x} = \begin{bmatrix} 1 & 1 & \cdots & 1 \end{bmatrix} \begin{bmatrix} x_1 \\ x_2 \\ \vdots\\ x_n \end{bmatrix} = \sum_{i=1}^{n}x_{i}.
+\]
+
+**(b)** Calculate the sample standard deviation of `x` *without* the use of `mean()`, `sd()`, `sum()`, or `+`. You may use `sd()` to check your answer.
+
+**Solution:**
+
+```{r, solution = TRUE}
+sqrt(crossprod(x - x_bar, x - x_bar) / (n - 1))
+sd(x) # checking work
+```
+
+The command `crossprod(x - x_bar, x - x_bar)` is performing the operation
+
+\[
+(\boldsymbol{x - \bar{x}})^\top (\boldsymbol{x - \bar{x}})
+\]
+
+where $(\boldsymbol{x - \bar{x}})$ is a column vector which stores the values of `x` with the sample mean subtracted from each. That is
+
+\[
+\boldsymbol{x - \bar{x}} = \begin{bmatrix} x_1 - \bar{x} \\ x_2 - \bar{x} \\ \vdots\\ x_n - \bar{x} \end{bmatrix}.
+\]
+
+So,
+
+\[
+(\boldsymbol{x - \bar{x}})^\top (\boldsymbol{x - \bar{x}}) = 
+\begin{bmatrix} x_1 - \bar{x} & x_2 - \bar{x} & \cdots& x_n - \bar{x} \end{bmatrix} \begin{bmatrix} x_1 - \bar{x} \\ x_2 - \bar{x} \\ \vdots\\ x_n - \bar{x} \end{bmatrix} = 
+\sum_{i=1}^{n}(x - \bar{x})^2.
+\]
+
+## Exercise 2 (Vectors and Matrices)
+
+For this exercise, you will create several vectors and matrices, as well as perform various matrix operations.
+
+**(a)** Create five vectors `x0`, `x1`, `x2`, `x3`, and `y`. Each should have a length of 30 and store the following:
+
+- `x0`: Each element should be the value `1`.
+- `x1`: The first 30 square numbers, starting from `1` (so `1`, `4`, `9`, etc.)
+- `x2`: 30 evenly spaced numbers between `0` and `1`. (Including `0` and `1`. It may help to read the documentation for `seq()`.)
+- `x3`: The natural log of the integers from `1` to `30`
+- `y`: The result of running the following code, after creating the other four vectors:
+
+```{r, eval = FALSE}
+set.seed(114)
+y  = 5 * x0 + 1 * x1 + 6 * x2 + 3 * x3 + rnorm(n = 30, mean = 0 , sd = 1)
+```
+
+Report the value returned from `sum(y)`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+x0 = rep(1, 30)
+x1 = (1:30) ^ 2
+x2 = seq(0, 1, length.out = 30)
+x3 = log(1:30)
+set.seed(114)
+y  = 5 * x0 + 1 * x1 + 6 * x2 + 3 * x3 + rnorm(n = 30, mean = 0 , sd = 1)
+sum(y)
+```
+
+**(b)** Create a matrix `X` which stores `x0`, `x1`, `x2`, and `x3` as columns of the matrix. Report the value returned from `sum(X)`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+X = cbind(x0, x1, x2, x3)
+sum(X)
+```
+
+**(c)** Use matrix operations to create a new matrix `beta_hat` defined as follows:
+
+\[
+\hat{\beta} = (X^T X)^{-1} X^T y.
+\]
+
+Report the values stored in the matrix `beta_hat`. Note that you can use the vector `y` as if it is a $30 \times 1$ matrix.
+
+**Solution:**
+
+```{r, solution = TRUE}
+beta_hat = solve(t(X) %*% X) %*% t(X) %*% y
+beta_hat
+```
+
+**(d)** Your `beta_hat` should store a $4 \times 1$ matrix. That is, a matrix with $4$ rows and $1$ column. Subset this matrix to exclude the first row, then square each element and report the sum of these results.
+
+**Solution:**
+
+```{r, solution = TRUE}
+sum(beta_hat[-1, ] ^ 2)
+```
+
+**(e)** Create a new variable `y_hat` which stores the result of the matrix operation,
+
+\[
+\hat{y} = X \hat{\beta}.
+\]
+
+The result will be a $30 \times 1$ matrix. Perform and report the result of the following operation,
+
+\[
+\sum_{i = 1}^{30} (y_i - \hat{y}_i)^ 2.
+\]
+
+Here you can use the matrix `y_hat` as if it is a vector. Then, $y_i$ is the $i$th element of $y$ and $\hat{y}_i$ is the $i$th element of $\hat{y}$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+y_hat = X %*% beta_hat
+sum((y - y_hat) ^ 2)
+crossprod(y - y_hat, y - y_hat)
+```
+
+## Exercise 3 (Discrete Probability)
+
+The [2016 United States presidential election](https://en.wikipedia.org/wiki/United_States_presidential_election,_2016) has been an interesting contest. A [Fox News National Poll](http://www.foxnews.com/politics/interactive/2016/06/09/fox-news-poll-national-releas-6-16/) from June which surveyed 1004 registered voters placed former New Mexico Governor [Gary Johnson](https://en.wikipedia.org/wiki/Gary_Johnson) in third place, which is expected, however polling in the double digits at 12%. ([Third party candidates haven't performed well in recent years. The last time a third party managed to get votes in the Electoral College was 1968.](https://en.wikipedia.org/wiki/United_States_presidential_election,_1968))
+
+Suppose the true proportion of registered voters that support Johnson is 12% and we obtain our own random sample of 50 registered voters. Answer the follows questions as they relate to this sample of 50 voters.
+
+**(a)** What is the probability that exactly 5 of the voters are Johnson supporters?
+
+**Solution:**
+
+Define a random variable $X$ for the number of voters who support Johnson in a sample of 50 voters.
+
+\[
+X \sim b(n = 50, p = 0.12)
+\]
+
+Here, we find,
+
+\[
+P(X = 5).
+\]
+
+```{r, solution = TRUE}
+dbinom(5, size = 50, prob = 0.12)
+```
+
+**(b)** What is the probability that 10 or fewer voters are Johnson supporters?
+
+**Solution:**
+
+Here, we find,
+
+\[
+P(X \leq 10).
+\]
+
+```{r, solution = TRUE}
+pbinom(10, size = 50, prob = 0.12)
+```
+
+**(c)** What is the probability that 37 or more voters are **not** Johnson supporters?
+
+**Solution:**
+
+We could define a random variable $Y$ for the number of voters who do **not** support Johnson in a sample 50 voters.
+
+\[
+Y \sim b(n = 50, p = 0.88)
+\]
+
+Here then, we find,
+
+\[
+P(Y \geq 37) = 1 - P(Y \leq 36).
+\]
+
+We see two equivalent ways to do so in `R`.
+
+```{r, solution = TRUE}
+sum(dbinom(37:50, size = 50, prob = 0.88))
+1 - pbinom(36, size = 50, prob = 0.88)
+```
+
+Note that,
+
+\[
+P(Y \geq 37) = P(X \leq 13).
+\]
+
+```{r, solution = TRUE}
+pbinom(13, size = 50, prob = 0.12)
+```
+
+**(d)** What is the probability that between 3 and 9 (inclusive) voters are Johnson supporters?
+
+**Solution:**
+
+Here, we find,
+
+\[
+P(3 \leq X \leq 9) = P(X \leq 9) - P(X \leq 2).
+\]
+
+We see two equivalent ways to do so in `R`.
+
+```{r, solution = TRUE}
+sum(dbinom(3:9, size = 50, prob = 0.12))
+pbinom(9, size = 50, prob = 0.12) - pbinom(2, size = 50, prob = 0.12)
+```
+
+## Exercise 4 (Continuous Probability)
+
+For this exercise, consider a random variable $X$ which is normally distributed with a mean of 120 and a standard deviation of 15. That is,
+
+\[
+X \sim N\left(\mu = 120, \sigma^2 = 225\right).
+\]
+
+**(a)** Calculate $P(X < 95)$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+pnorm(95, mean = 120, sd = 15)
+```
+
+**(b)** Calculate $P(X > 140)$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+pnorm(140, mean = 120, sd = 15, lower.tail = FALSE)
+1 - pnorm(140, mean = 120, sd = 15)
+```
+
+**(c)** Calculate $P(95 < X < 120)$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+pnorm(120, mean = 120, sd = 15) - pnorm(95, mean = 120, sd = 15)
+diff(pnorm(c(95, 120), mean = 120, sd = 15))
+```
+
+**(d)** Find $q$ such that $P(X < q) = 0.05$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+qnorm(0.05, mean = 120, sd = 15)
+```
+
+**(e)** Find $q$ such that $P(X > q) = 0.10$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+qnorm(0.90, mean = 120, sd = 15)
+qnorm(0.10, mean = 120, sd = 15, lower.tail = FALSE)
+```
+
+## Exercise 5 (Packages, Plotting)
+
+For this exercise, we will use the `diabetes` dataset from the `faraway` package.
+
+**(a)** Install and load the `faraway` package. **Do not** include the install command in your .Rmd file. (If you do it will install the package every time you knit your file.) **Do** include the command to load the package into your environment.
+
+**Solution:**
+
+```{r, solution = TRUE}
+library(faraway)
+```
+
+**(b)** How many observations are in this dataset? How many variables?
+
+**Solution:**
+
+```{r, solution = TRUE}
+dim(diabetes)
+```
+
+We find there are `r nrow(diabetes)` observations and `r ncol(diabetes)` variables.
+
+**(c)** What are the names of the variables in this dataset?
+
+**Solution:**
+
+```{r, solution = TRUE}
+names(diabetes)
+```
+
+**(d)** What is the mean [HDL](https://en.wikipedia.org/wiki/High-density_lipoprotein) level (High Density Lipoprotein) of individuals in this sample?
+
+**Solution:**
+
+```{r, solution = TRUE}
+mean(diabetes$hdl, na.rm = TRUE)
+```
+
+**(e)** What is the standard deviation total cholesterol of individuals in this sample?
+
+**Solution:**
+
+```{r, solution = TRUE}
+sd(diabetes$chol, na.rm = TRUE)
+```
+
+**(f)** What is the range of ages of individuals in this sample?
+
+**Solution:**
+
+```{r, solution = TRUE}
+range(diabetes$age, na.rm = TRUE)
+```
+
+**(g)** What is the mean HDL of females in this sample?
+
+**Solution:**
+
+```{r, solution = TRUE}
+mean(subset(diabetes, gender == "female")$hdl)
+```
+
+**(h)** Create a scatterplot of HDL (y-axis) vs weight (x-axis). Use a non-default color for the points. (Also, be sure to give the plot a title and label the axes appropriately.) Based on the scatterplot, does there seem to be a relationship between the two variables? Briefly explain.
+
+**Solution:**
+
+```{r, solution = TRUE}
+plot(hdl ~ weight, data = diabetes,
+     xlab = "Weight (Pounds)",
+     ylab = "High-Density Lipoprotein (mg/dL)",
+     main = "HDL vs Weight",
+     pch  = 20,
+     cex  = 2,
+     col  = "dodgerblue")
+```
+
+On average, we see a slight decrease in HDL as weight increases. However, there are fewer observations at higher weights.
+
+**(i)** Create a scatterplot of total cholesterol (y-axis) vs weight (x-axis). Use a non-default color for the points. (Also, be sure to give the plot a title and label the axes appropriately.) Based on the scatterplot, does there seem to be a relationship between the two variables? Briefly explain.
+
+**Solution:**
+
+```{r, solution = TRUE}
+plot(chol ~ weight, data = diabetes,
+     xlab = "Weight (Pounds)",
+     ylab = "Total Cholesterol (mg/dL)",
+     main = "Total Cholesterol vs Weight",
+     pch  = 20,
+     cex  = 2,
+     col  = "darkorange")
+```
+
+Overall, we see very little trend. Average total cholesterol seems nearly constant for different weights.
+
+## Exercise 6 (Importing Data, Plotting)
+
+For this exercise we will use the data stored in [`nutrition.csv`](nutrition.csv). It contains the nutritional values per serving size for a large variety of foods as calculated by the USDA. It is a cleaned version totaling 5138 observations and is current as of September 2015.
+
+The variables in the dataset are:
+
+- `ID` 
+- `Desc` - Short description of food
+- `Water` - in grams
+- `Calories` - in kcal
+- `Protein` - in grams
+- `Fat` - in grams
+- `Carbs` - Carbohydrates, in grams
+- `Fiber` - in grams
+- `Sugar` - in grams
+- `Calcium` - in milligrams
+- `Potassium` - in milligrams
+- `Sodium` - in milligrams
+- `VitaminC` - Vitamin C, in milligrams
+- `Chol` - Cholesterol, in milligrams
+- `Portion` - Description of standard serving size used in analysis
+
+**(a)** Create a histogram of `Calories`. Do not modify `R`'s default bin selection. Make the plot presentable. Describe the shape of the histogram. Do you notice anything unusual?
+
+**Solution:**
+
+```{r, solution = TRUE}
+nutrition = read.csv("nutrition.csv")
+hist(nutrition$Calories,
+     xlab = "Calories (kcal)",
+     main = "Histogram of Calories for Various Foods",
+     border = "dodgerblue",
+     col  = "darkorange")
+```
+
+The distribution of `Calories` is right-skewed. There are two odd spikes, one around 400 kcal and one past 800 kcal. Perhaps some foods are being rounded to 400, or portion sizes are created with 400 kcal in mind. Also, perhaps there is an upper limit, and portion sizes are created to keep calories close to 900 but not above.
+
+**(b)** Create a scatterplot of calories (y-axis) vs protein (x-axis). Make the plot presentable. Do you notice any trends? Do you think that knowing only the protein content of a food, you could make a good prediction of the calories in the food?
+
+**Solution:**
+
+```{r, solution = TRUE}
+plot(Calories ~ Protein, data = nutrition,
+     xlab = "Protein (grams)",
+     ylab = "Calories (kcal)",
+     main = "Calories vs Protein",
+     pch  = 20,
+     cex  = 1,
+     col  = "dodgerblue")
+```
+
+While it is not very easy to see, as protein increases, the average calorie count increases. (We'll eventually summarize data like this with a model that makes this easier to see.)
+
+Also, notice that the variability in calorie count decreases as protein increases.
+
+Since there is some trend, knowing the protein could help predict the calorie count, but not particularly well. (We'll eventually perform a test to make this assessment.)
+
+**(c)** Create a scatterplot of `Calories` (y-axis) vs `4 * Protein + 4 * Carbs + 9 * Fat + 2 * Fiber` (x-axis). Make the plot presentable. You will either need to add a new variable to the data frame, or, use the `I()` function in your formula in the call to `plot()`. If you are at all familiar with nutrition, you may realize that this formula calculates the calorie count based on the protein, carbohydrate, and fat values. You'd expect then that the result here is a straight line. Is it? If not, can you think of any reasons why it is not?
+
+**Solution:**
+
+```{r, solution = TRUE}
+plot(Calories ~ I(4 * Protein + 4 * Carbs + 9 * Fat + 2 * Fiber), data = nutrition,
+     xlab = "Protein (grams)",
+     ylab = "Calories (kcal)",
+     main = "Calories vs Protein",
+     pch  = 20,
+     cex  = 1,
+     col  = "darkorange")
+```
+
+The result is *not* a straight line. There could be any number of reasons:
+
+- There are actually additional components that make up food energy that we are not considering. [Wikipedia: Food Energy](https://en.wikipedia.org/wiki/Food_energy).
+- Rounding.
+- Measurement error.
