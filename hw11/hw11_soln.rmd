@@ -1,0 +1,392 @@
+---
+title: 'STAT 420: Homework 11'
+author: "Fall 2020, D. Unger"
+date: 'Due: Tuesday, December 1 by 11:30 PM CT'
+output:
+  html_document:
+    theme: readable
+    toc: yes
+---
+
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+```
+
+# Solution
+
+## Exercise 1 (`longley` Macroeconomic Data)
+
+The data set `longley` from the `faraway` package contains macroeconomic data for predicting employment.
+
+```{r}
+library(faraway)
+```
+
+```{r, eval = FALSE}
+View(longley)
+?longley
+```
+
+**(a)** Find the correlation between each of the variables in the dataset.
+
+**Solution:**
+
+```{r, solution = TRUE}
+round(cor(longley), 2)
+pairs(longley)
+```
+
+**(b)** Fit a model with `Employed` as the response and the remaining variables as predictors. Calculate the variance inflation factor (VIF) for each of the predictors. What is the largest VIF? Do any of the VIFs suggest multicollinearity?
+
+**Solution:**
+
+```{r, solution = TRUE}
+employ_mod = lm(Employed ~ ., data = longley)
+#summary(employ_mod)
+vif(employ_mod)
+vif(employ_mod)[which.max(vif(employ_mod))]
+```
+
+The VIFs for every predictor except for `Armed.Forces` are extremely large. `GNP` has the largest VIF.
+
+**(c)** What proportion of the observed variation in `Population` is explained by a linear relationship with the other predictors?
+
+**Solution:**
+
+```{r, solution = TRUE}
+partfit1 = lm(Employed ~ . - Population, data = longley)
+partfit2 = lm(Population ~ . - Employed, data = longley)
+summary(partfit2)$r.squared
+```
+
+99.75% of the variation of `Population` is explained by a linear relationship with the other *predictors*.
+
+**(d)** Calculate the partial correlation coefficient for `Population` and `Employed` **with the effects of the other predictors removed**.
+
+**Solution:**
+
+```{r, solution = TRUE}
+cor(resid(partfit2), resid(partfit1))
+```
+
+**(e)** Fit a new model with `Employed` as the response and the predictors from the model in **(b)** that were significant. (Use $\alpha = 0.05$.) Calculate the variance inflation factor for each of the predictors. What is the largest VIF? Do any of the VIFs suggest multicollinearity?
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(employ_mod)
+employ_mod_small = lm(Employed ~ Year + Armed.Forces + Unemployed, data = longley)
+vif(employ_mod_small)
+vif(employ_mod_small)[which.max(vif(employ_mod_small))]
+```
+
+None of these VIFs appear to be a problem. `Year` is the largest. Note that we have fixed the multicollinearity, but that does not necessarily justify this model.
+
+**(f)** Use an $F$-test to compare the models in parts **(b)** and **(e)**. Report the following:
+
+- The null hypothesis
+- The test statistic
+- The distribution of the test statistic under the null hypothesis
+- The p-value
+- A decision
+- Which model you prefer, **(b)** or **(e)**
+
+**Solution:**
+
+```{r, solution = TRUE}
+anova(employ_mod_small, employ_mod)
+```
+
+- Null: $\beta_{GNP.def} = \beta_{GNP} = \beta_{Pop} = 0.$
+- TS: $F = 1.75$
+- Distribution: $F$ with degrees of freedom $3$ and $9$
+- p-value: 0.23
+- Decision: Do NOT reject the null hypothesis.
+- Prefer: The smaller model based on the $F$ test
+
+**(g)** Check the assumptions of the model chosen in part **(f)**. Do any assumptions appear to be violated?
+
+**Solution:**
+
+```{r, echo = FALSE}
+plot_fitted_resid = function(model, pointcol = "dodgerblue", linecol = "darkorange") {
+  plot(fitted(model), resid(model), 
+       col = pointcol, pch = 20, cex = 1.5,
+       xlab = "Fitted", ylab = "Residuals")
+  abline(h = 0, col = linecol, lwd = 2)
+}
+
+plot_qq = function(model, pointcol = "dodgerblue", linecol = "darkorange") {
+  qqnorm(resid(model), col = pointcol, pch = 20, cex = 1.5)
+  qqline(resid(model), col = linecol, lwd = 2)
+}
+```
+
+```{r, message = FALSE, warning = FALSE, solution = TRUE}
+library(lmtest)
+bptest(employ_mod_small)
+shapiro.test(resid(employ_mod_small))
+par(mfrow = c(1, 2))
+plot_fitted_resid(employ_mod_small)
+plot_qq(employ_mod_small)
+```
+
+There do not appear to be any violations of assumptions.
+
+## Exercise 2 (`odor` Chemical Data)
+
+Use the `odor` data from the `faraway` package for this question.
+
+**(a)** Fit a complete second order model with `odor` as the response and the three other variables as predictors. That is, use each first order term, their two-way interactions, and the quadratic term for each of the predictors. Perform the significance of the regression test. Use a level of $\alpha = 0.10$. Report the following:
+
+- The test statistic
+- The distribution of the test statistic under the null hypothesis
+- The p-value
+- A decision
+
+**Solution:**
+
+```{r, solution = TRUE}
+odor_mod_comp = lm(odor ~ . ^ 2 + I(temp ^ 2) + I(gas ^ 2) + I(pack ^ 2), data = odor)
+summary(odor_mod_comp)
+```
+
+- Test statistic: 4.152
+- Distribution: F with 9 and 5 degrees of freedom
+- p-value: 0.06569
+- Decision: Reject $H_0$ at $\alpha = 0.10$.
+
+**(b)** Fit a model with the same response, but now excluding any interaction terms. So, include all linear and quadratic terms. Compare this model to the model in **(a)** using an appropriate test. Use a level of $\alpha = 0.10$. Report the following:
+
+- The test statistic
+- The distribution of the test statistic under the null hypothesis
+- The p-value
+- A decision
+
+**Solution:**
+
+```{r, solution = TRUE}
+odor_mod_quad = lm(odor ~ . + I(temp ^ 2) + I(gas ^ 2) + I(pack ^ 2), data = odor)
+summary(odor_mod_quad)
+anova(odor_mod_quad, odor_mod_comp)
+```
+
+- Test statistic: 0.1936
+- Distribution: F with 3 and 5 degrees of freedom
+- p-value: 0.8965
+- Decision: Do NOT reject $H_0$ at $\alpha = 0.10$.
+
+**(c)** Report the proportion of the observed variation of `odor` explained by the two previous models.
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(odor_mod_quad)$r.squared
+summary(odor_mod_comp)$r.squared
+```
+
+
+
+**(d)** Use adjusted $R^2$ to pick from the two models. Report both values. Does this decision match the decision made in part **(b)**?
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(odor_mod_quad)$adj.r.squared
+summary(odor_mod_comp)$adj.r.squared
+```
+
+Based on adjusted $R^2$ we prefer the smaller model (without interaction terms.) This matches our decision from part **(b)**.
+
+## Exercise 3 (`teengamb` Gambling Data)
+
+The `teengamb` dataset from the `faraway` package contains data related to teenage gambling in Britain.
+
+**(a)** Fit an additive model with `gamble` as the response and the other variables as predictors. Use backward AIC variable selection to determine a good model. When writing your final report, you may wish to use `trace = 0` inside of `step()` to minimize unneeded output. (This advice is also useful for future questions that use `step()`.)
+
+**Solution:**
+
+```{r, solution = TRUE}
+gamble_add = lm(gamble ~ sex + status + income + verbal, data = teengamb)
+gamble_add_back_aic = step(gamble_add, direction = "backward", trace = 0)
+coef(gamble_add_back_aic)
+```
+
+
+
+**(b)** Use backward BIC variable selection to determine a good model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+n = length(resid(gamble_add))
+gamble_add_back_bic = step(gamble_add, direction = "backward", k = log(n), trace = 0)
+coef(gamble_add_back_bic)
+```
+
+
+
+**(c)** Use a statistical test to compare these two models. Use a level of $\alpha = 0.10$. Report the following:
+
+- The test statistic
+- The distribution of the test statistic under the null hypothesis
+- The p-value
+- A decision
+
+**Solution:**
+
+```{r, solution = TRUE}
+anova(gamble_add_back_bic, gamble_add_back_aic)
+```
+
+- Test statistic: 2.2646 (Or 1.5049)
+- Distribution: F with 1 and 43 degrees of freedom (Or t with 43)
+- p-value: 0.1397
+- Decision: Do **not** reject $H_0$ at $\alpha = 0.10$. (Prefer the model chosen by BIC, which is smaller.)
+
+**(d)** Fit a model with `gamble` as the response and the other variables as predictors with *all* possible interactions, up to and including a four-way interaction. Use backward AIC variable selection to determine a good model. 
+
+**Solution:**
+
+```{r, solution = TRUE}
+gamble_int = lm(gamble ~ sex * status * income * verbal, data = teengamb)
+gamble_int_back_aic = step(gamble_int, direction = "backward", trace = 0)
+coef(gamble_int_back_aic)
+```
+
+
+
+**(e)** Compare the values of adjusted $R^2$ for the each of the five previous models. Which model is the "best" model out of the five? Justify your answer.
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(gamble_add)$adj.r.squared
+summary(gamble_add_back_aic)$adj.r.squared
+summary(gamble_add_back_bic)$adj.r.squared
+summary(gamble_int)$adj.r.squared
+summary(gamble_int_back_aic)$adj.r.squared
+```
+
+The "best" model of the five is the interaction model chosen using AIC since it has the largest adjusted $R^2$ by far.
+
+## Exercise 4 (`prostate` Data)
+
+Using the `prostate` dataset from the `faraway` package, fit a model with `lpsa` as the response and the other variables as predictors. For this exercise only consider first order predictors.
+
+**(a)** Find the model with the **best** AIC. Report the predictors that are used in the resulting model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+library(leaps)
+lpsa_mod = lm(lpsa ~ . , data = prostate)
+lpsa_mod_subs = summary(regsubsets(lpsa ~ . , data = prostate))
+n = length(resid(lpsa_mod))
+p = length(coef(lpsa_mod))
+lpsa_mod_subs$which
+
+(lpsa_mod_AIC = n * log(lpsa_mod_subs$rss / n) + 2 * (2:p))
+lpsa_mod_subs$which[which.min(lpsa_mod_AIC), ]
+```
+
+**(b)** Find the model with the **best** BIC. Report the predictors that are used in the resulting model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+lpsa_mod_subs$bic
+which.min(lpsa_mod_subs$bic)
+lpsa_mod_subs$which[which.min(lpsa_mod_subs$bic),]
+```
+
+**(c)** Find the model with the **best** adjusted $R^2$. Report the predictors that are used in the resulting model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+lpsa_mod_subs$adjr2
+which.max(lpsa_mod_subs$adjr2)
+lpsa_mod_subs$which[which.max(lpsa_mod_subs$adjr2),]
+```
+
+**(d)** Of the four models you just considered, some of which *may* be the same, which is the best for making predictions? Use leave-one-out-cross-validated MSE or RMSE to decide.
+
+**Solution:**
+
+We first fit the models.
+
+Original:
+
+```{r, solution = TRUE}
+lpsa_mod = lm(lpsa ~ . , data = prostate)
+```
+
+Found using AIC:
+
+```{r, solution = TRUE}
+which(lpsa_mod_subs$which[which.min(lpsa_mod_AIC), ])
+lpsa_mod_aic = lm(lpsa ~ lcavol + lweight + age + lbph + svi, data = prostate)
+```
+
+Found using BIC:
+
+```{r, solution = TRUE}
+which(lpsa_mod_subs$which[which.min(lpsa_mod_subs$bic),])
+lpsa_mod_bic = lm(lpsa ~ lcavol + lweight + svi, data = prostate)
+```
+
+Found using adjusted $R^2$:
+
+```{r, solution = TRUE}
+which(lpsa_mod_subs$which[which.max(lpsa_mod_subs$adjr2),])
+lpsa_mod_ar2 = lm(lpsa ~ lcavol + lweight + age + lbph + svi + lcp + pgg45, data = prostate)
+```
+
+We then write a function to calculate the LOOCV RMSE.
+
+```{r, solution = TRUE}
+get_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+}
+```
+
+Finally, calculate the LOOCV RMSE for each.
+
+```{r, solution = TRUE}
+get_loocv_rmse(lpsa_mod)
+get_loocv_rmse(lpsa_mod_aic)
+get_loocv_rmse(lpsa_mod_bic)
+get_loocv_rmse(lpsa_mod_ar2)
+```
+
+We see that the model chosen via AIC is the best, as it obtains the lowest LOOCV RMSE.
+
+## Exercise 5 (Goalies, Revisited)
+
+**(a)** Use the data found in [`goalies_cleaned.csv`](goalies_cleaned.csv) to find a "good" model for wins, `W`. Use any methods seen in class. The model should reach a `Multiple R-squared` above `0.99` using fewer than 37 parameters. Hint: You may want to look into the ability to add many interactions quickly in `R`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+goalies_cleaned = read.csv("goalies_cleaned.csv")
+```
+
+As always, we are *lazy*, so we start with a **huge** model, then use backwards AIC to reduce the number of parameters, while still fitting well.
+
+```{r, solution = TRUE}
+biggest_fit = lm(W ~ . ^ 2 + I(GA ^ 2) + I(SA ^ 2) + I(SV ^ 2) + I(SV_PCT ^ 2) + I(GAA ^ 2) + I(SO ^ 2) + I(MIN ^ 2) + I(PIM ^ 2), data = goalies_cleaned)
+fit_aic = step(biggest_fit, direction = "backward", trace = 0)
+```
+
+We see that the model we found meets the stated criteria.
+
+```{r, solution = TRUE}
+length(coef(fit_aic))
+summary(fit_aic)$r.sq
+```
+
+```{r, solution = TRUE}
+coef(fit_aic)
+```
