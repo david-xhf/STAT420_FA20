@@ -179,7 +179,7 @@
 
 - [Chapter 11: Categorical Predictors and Interactions](http://daviddalpiaz.github.io/appliedstats/categorical-predictors-and-interactions.html)
 
-## Read the [Final Data Project Guidelines]
+## Read the [Final Data Project Guidelines](https://github.com/david-xhf/STAT420_FA20/blob/main/Final%20Project/project.pdf)
 
 ## Watch Supplemental Videos
 
