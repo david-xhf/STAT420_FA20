@@ -199,3 +199,31 @@
 - Parameterization
 - Larger Models
 - Interaction Models in R
+
+
+
+# Week 9
+
+## Read Applied Statistics with R
+
+- [Chapter 13: Model Diagnostics](http://daviddalpiaz.github.io/appliedstats/model-diagnostics.html)
+
+## Watch Supplemental Videos
+
+**Regression Diagnostics**
+
+- Introduction
+- Model Assumptions
+- Fitted versus Residuals Plot
+- Q-Q Plots
+- Diagnostic Tests
+- Diagnostics in R
+
+**Unusual Observations**
+
+- Introduction
+- Leverage
+- Outliers
+- Influence
+- Unusual Observations Overview
+- Unusual Observations in R
